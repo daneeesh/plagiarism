@@ -3,8 +3,8 @@
 # s0808798           #
 ######################
 
-import os, math, string, md5, cProfile
-from Lab2Support import *
+import os, math, string, md5, cProfile, re
+from Lab2Support import readFile
 from operator import itemgetter
 from nltk.corpus import stopwords
 
@@ -24,23 +24,24 @@ def textopener():
 			sccount += 1
 		i += 1
 	text = tokens[i:]
-	a = 0
+	
+	# clean up the tokens and separate punctuation marks from individual words
 	n = 0
 	while n < len(text):
 		for p in string.punctuation:
 			try:
 				s = text[n].split(p)
-				if (s[0] != ''):
+				if (s[0] != ''): #if there's text before the punctuation mark
 					text[n] = s[0]
-					if (s[1] != ''):
+					if (s[1] != ''): #if there's text after the punctuation mark too
 						text.insert(n+1, s[1])
-				elif (s[1] != ''):
+				elif (s[1] != ''): #if there's text only after the punctuation mark
 					text[n] = s[1]
-				else:
+				else: #if the token is only a punctuation mark
 					text.pop(n)
 				#print "removed " + str(p) + " and got: " + text[n]
 			except:
-				a = 0
+				pass
 		n += 1
 	dict[infile.split('.')[0]] = text
   return dict
@@ -50,35 +51,45 @@ texts = textopener()
 def exactduplicate(text1, text2, lower):
 	bool = True
 	exactduplicate = False
-	if (len(text1) != len(text2)):
-		bool = False
+	t1_len = len(text1)
+	t2_len = len(text2)
+	if (t1_len != t2_len):
+		return exactduplicate
 	n = 0
 	while (bool):
 		if lower:
 			if (text1[n].lower() != text2[n].lower()):
 				bool = False
 			else:
-				if (len(text1) - 1 == n):
+				if (t1_len - 1 == n):
 					exactduplicate = True
 					bool = False
 		else:
 			if (text1[n] != text2[n]):
 				bool = False
 			else:
-				if (len(text1) - 1 == n):
+				if (t1_len - 1 == n):
 					exactduplicate = True
 					bool = False
 		n += 1
+	
+	#the above approach speeds up computation by a factor of 3 compared to the 
+	#very straightforward method below according to cProfile (0.048 s vs 0.168 s)
+	"""if lower:
+		return map(str.lower, text1) == map(str.lower, text2)
+	else:
+		return text1 == text2"""
 	return exactduplicate
 	
 def q2(txts):
 	keys = txts.keys()
+	key_len = len(keys)
 	exactduplicates = []
 	i = 0
-	while i < len(keys):
+	while i < key_len:
 		#print str(i) + " out of " + str(len(keys))
 		n = i + 1
-		while n < len(keys):
+		while n < key_len:
 			if (exactduplicate(txts[keys[i]], txts[keys[n]], True)):
 				plagiarism.append([keys[i], keys[n]])
 			n += 1
