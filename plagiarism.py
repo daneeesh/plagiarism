@@ -105,12 +105,14 @@ def createhash(txts):
 	keys = txts.keys()
 	for k in keys:
 		for w in txts[k]:
-			if (swords.count(w) == 0):
+			# replace 'if (swords.count(w) == 0)', this cuts down 1/3 of the time (0.953s vs 0.666s):
+			if not(w in swords): 
+				low_w = w.lower()
 				try:
-					if(md5hash[w.lower()] != ''):
-						hashash = True
+					if md5hash[low_w]:
+						pass
 				except:
-					md5hash[w.lower()] = bin(int(md5.new(w.lower()).hexdigest(), 16))[2:]
+					md5hash[low_w] = bin(int(md5.new(low_w).hexdigest(), 16))[2:]
 	#print len(md5hash)
 	return md5hash
 			
@@ -120,11 +122,12 @@ def wordfreq(text):
 	freq = {}
 	distinct = set(text)
 	for d in distinct:
-		if (swords.count(d) == 0):
+		if not(d in swords):
+			low_d = d.lower()
 			try:
-				freq[d.lower()] += text.count(d)
+				freq[low_d] += text.count(d)
 			except:
-				freq[d.lower()] = text.count(d)
+				freq[low_d] = text.count(d)
 	#freq = sorted(freq.items(), key=itemgetter(1), reverse=True)
 	return freq
 	
@@ -134,37 +137,35 @@ def fprints(txts):
 	bits = createhash(txts)
 	fingerprints = {}
 	keys = txts.keys()
-	for kys in keys:
-		f = wordfreq(txts[kys])
-		i = 0
-		fprint = []
-		while i < 128:
-			fprint.append(0)
-			i += 1
+	for key in keys:
+		f = wordfreq(txts[key])
+		fprint = [0 for i in range(128)]
 		fkeys = f.keys()
 		for k in fkeys:
 			n = 0
-			if (len(bits[k]) < 128):
+			k_len = len(bits[k])
+			if (k_len < 128):
 				#print "not long enough: " + str(len(bits[k]))
-				while (len(bits[k]) + n < 128):
+				while (k_len + n < 128):
 					fprint[n] -= f[k]
 					n += 1
 			m = 0
-			while m < len(bits[k]):
+			while m < k_len:
 				if (bits[k][m] == '0'):
 					fprint[n-1+m] -= f[k]
 				else:
 					fprint[n-1+m] += f[k]
 				m += 1
 		k = 0
-		while (k < len(fprint)):
+		fprint_len = len(fprint)
+		while (k < fprint_len):
 			if (fprint[k] > 0):
 				fprint[k] = 1
 			else:
 				fprint[k] = 0
 			k += 1
 		#print fprint
-		fingerprints[kys] = fprint
+		fingerprints[key] = fprint
 	return fingerprints
 
 #print fprints(texts)
@@ -174,7 +175,8 @@ def nearduplicate(fprint1, fprint2):
 	nearduplicate = False
 	s = 0
 	n = 0
-	while n < len(fprint1):
+	fprint_len = len(fprint1)
+	while n < fprint_len:
 		s += math.fabs(fprint1[n]-fprint2[n])
 		n += 1
 	if (s < 6):
@@ -194,13 +196,16 @@ def q3(txts):
 	fingerprints = fprints(txts)
 	keys = fingerprints.keys()
 	i = 0
-	while i < len(keys):
+	keys_len = len(keys)
+	while i < keys_len:
 		#print str(i) + " out of " + str(len(keys))
 		n = i + 1
-		while n < len(keys):
-			if (nearduplicate(fingerprints[keys[i]], fingerprints[keys[n]])):
-				if ((plagiarism.count([keys[i], keys[n]]) == 0) & (plagiarism.count([keys[n], keys[i]]) == 0)):
-					plagiarism.append([keys[i], keys[n]])
+		while n < keys_len:
+			keys_i = keys[i]
+			keys_n = keys[n]
+			if (nearduplicate(fingerprints[keys_i], fingerprints[keys_n])):
+				if not(([keys_i, keys_n] or [keys_n, keys_i]) in plagiarism):
+					plagiarism.append([keys_i, keys_n])
 			n += 1
 		i += 1
 	#return nearduplicates
