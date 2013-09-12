@@ -133,28 +133,32 @@ def wordfreq(text):
 	
 #print wordfreq(texts[texts.keys()[0]])
 
+
+#implement simhash fingerprinting
 def fprints(txts):
 	bits = createhash(txts)
 	fingerprints = {}
 	keys = txts.keys()
-	for key in keys:
-		f = wordfreq(txts[key])
-		fprint = [0 for i in range(128)]
-		fkeys = f.keys()
-		for k in fkeys:
+	for key in keys: #for every text
+		f = wordfreq(txts[key]) #count the number of times each word occurs in a speech
+		fprint = [0 for i in range(128)] #initialise the fingerprint
+		fkeys = f.keys() #get every word in the current text
+		for word in fkeys: #for every word in the current text
 			n = 0
-			k_len = len(bits[k])
-			if (k_len < 128):
+			word_len = len(bits[word])
+			if (word_len < 128): #ensure all hashes are 128 bits long
 				#print "not long enough: " + str(len(bits[k]))
-				while (k_len + n < 128):
-					fprint[n] -= f[k]
+				while (word_len + n < 128):
+					#print f[word]
+					fprint[n] -= f[word]
+					#print fprint
 					n += 1
 			m = 0
-			while m < k_len:
-				if (bits[k][m] == '0'):
-					fprint[n-1+m] -= f[k]
+			while m < word_len:
+				if (bits[word][m] == '0'):
+					fprint[n-1+m] -= f[word]
 				else:
-					fprint[n-1+m] += f[k]
+					fprint[n-1+m] += f[word]
 				m += 1
 		k = 0
 		fprint_len = len(fprint)
@@ -164,32 +168,23 @@ def fprints(txts):
 			else:
 				fprint[k] = 0
 			k += 1
-		#print fprint
+		#print fprint_len
 		fingerprints[key] = fprint
 	return fingerprints
 
-#print fprints(texts)
+#fprints(texts)
 
 def nearduplicate(fprint1, fprint2):
-	bool = True
-	nearduplicate = False
+	#nearduplicate = False
 	s = 0
 	n = 0
 	fprint_len = len(fprint1)
-	while n < fprint_len:
+	while (n < fprint_len) and (s < 7):
 		s += math.fabs(fprint1[n]-fprint2[n])
 		n += 1
-	if (s < 6):
-		nearduplicate = True
-	"""while (bool):
-		if (fprint1[n] != fprint2[n]):
-			bool = False
-		else:
-			if (len(fprint1) - 1 == n):
-				nearduplicate = True
-				bool = False
-		n += 1"""
-	return nearduplicate
+	if (s == 7):
+		return True
+	return False
 
 def q3(txts):
 	nearduplicates = []
@@ -200,8 +195,8 @@ def q3(txts):
 	while i < keys_len:
 		#print str(i) + " out of " + str(len(keys))
 		n = i + 1
+		keys_i = keys[i]
 		while n < keys_len:
-			keys_i = keys[i]
 			keys_n = keys[n]
 			if (nearduplicate(fingerprints[keys_i], fingerprints[keys_n])):
 				if not(([keys_i, keys_n] or [keys_n, keys_i]) in plagiarism):
@@ -210,7 +205,7 @@ def q3(txts):
 		i += 1
 	#return nearduplicates
 	
-#q3(texts)
+q3(texts)
 print "exact + near duplicates"
 print plagiarism
 
